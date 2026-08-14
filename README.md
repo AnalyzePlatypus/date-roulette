@@ -21,8 +21,11 @@ git push
 
 This repo lives under the **AnalyzePlatypus** GitHub account, but the SSH key on this
 machine authenticates as **Michoels**. So `origin` is an HTTPS remote that authenticates
-through the `gh` credential helper, which uses whichever `gh` account is *active*. If a
-push 403s, switch accounts first:
+through the `gh` credential helper, which uses whichever `gh` account is *active*.
+
+Cloning and fetching work either way, because the repo is public. Only **pushing** needs
+write access, and as Michoels it fails with `Permission to AnalyzePlatypus/date-roulette
+denied to Michoels` (403). Switch accounts first:
 
 ```bash
 gh auth switch --user AnalyzePlatypus
