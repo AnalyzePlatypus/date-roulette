@@ -1,0 +1,1284 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Date Night Roulette</title>
+<style>
+  :root{
+    --ink:#16121c;
+    --ink-deep:#0b0810;
+    --velvet:#241c2e;
+    --velvet-hi:#2e2439;
+    --line:#3b2f47;
+    --brass:#d9a94f;
+    --brass-dim:#9c7833;
+    --blush:#e2758b;
+    --bone:#f2ece2;
+    --muted:#a394ae;
+    --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: "Avenir Next", "Avenir", "Helvetica Neue", system-ui, -apple-system, sans-serif;
+    --sp:clamp(14px,3vw,26px);
+  }
+
+  *{box-sizing:border-box}
+
+  body{
+    margin:0;
+    min-height:100%;
+    background:
+      radial-gradient(120% 80% at 50% -10%, #2a2033 0%, rgba(42,32,51,0) 60%),
+      radial-gradient(90% 60% at 50% 110%, #1d1626 0%, rgba(29,22,38,0) 55%),
+      var(--ink);
+    color:var(--bone);
+    font-family:var(--sans);
+    font-size:16px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .wrap{
+    max-width:1000px;
+    margin:0 auto;
+    padding:calc(var(--sp) * 1.4) var(--sp) calc(var(--sp) * 2.2);
+    display:flex;
+    flex-direction:column;
+    gap:calc(var(--sp) * 1.15);
+  }
+
+  /* ---------- header ---------- */
+  header{display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center}
+  .eyebrow{
+    font-size:11px;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--brass);font-weight:600;
+  }
+  h1{
+    font-family:var(--serif);
+    font-weight:500;
+    font-size:clamp(30px,7vw,50px);
+    letter-spacing:-.015em;
+    margin:0;
+    text-wrap:balance;
+  }
+  h1 em{font-style:italic;color:var(--brass)}
+  .sub{color:var(--muted);font-size:14.5px;max-width:46ch;margin:0}
+  .rule{
+    width:100%;max-width:340px;height:1px;margin-top:6px;
+    background:linear-gradient(90deg,transparent,var(--line) 20%,var(--brass-dim) 50%,var(--line) 80%,transparent);
+  }
+
+  /* ---------- wheels ---------- */
+  .stations{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:calc(var(--sp) * 1.1);
+  }
+  @media (max-width:640px){ .stations{grid-template-columns:1fr} }
+
+  .station{
+    display:flex;flex-direction:column;align-items:center;gap:12px;
+    padding:calc(var(--sp) * .85) var(--sp);
+    background:linear-gradient(180deg,var(--velvet-hi),var(--velvet));
+    border:1px solid var(--line);
+    border-radius:4px;
+    position:relative;
+  }
+  .station::before{
+    content:"";position:absolute;inset:5px;border:1px solid rgba(217,169,79,.16);
+    border-radius:2px;pointer-events:none;
+  }
+  .station.locked{opacity:.62}
+
+  .step{
+    display:flex;align-items:baseline;gap:8px;
+    font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:600;
+    color:var(--brass);
+  }
+  .step b{
+    font-family:var(--serif);font-size:15px;letter-spacing:0;font-weight:600;
+    color:var(--bone);
+  }
+  .step .of{color:var(--muted);letter-spacing:.16em;font-weight:500}
+
+  .board{width:100%;max-width:340px;aspect-ratio:1;position:relative}
+  canvas{
+    width:100%;height:100%;display:block;
+    touch-action:none;cursor:grab;
+    border-radius:50%;
+  }
+  canvas:active{cursor:grabbing}
+  canvas:focus-visible{outline:2px solid var(--brass);outline-offset:4px}
+
+  /* ---------- buttons ---------- */
+  button{font-family:inherit;font-size:inherit;cursor:pointer}
+  button:focus-visible{outline:2px solid var(--brass);outline-offset:3px}
+  button[disabled]{cursor:not-allowed}
+
+  .spin{
+    appearance:none;
+    padding:11px 26px;
+    border-radius:2px;
+    border:1px solid var(--brass-dim);
+    background:linear-gradient(180deg,#e8bd62,var(--brass) 45%,#b98d3a);
+    color:#2a1e08;
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:.13em;
+    text-transform:uppercase;
+    box-shadow:0 1px 0 rgba(255,255,255,.35) inset, 0 3px 10px rgba(0,0,0,.35);
+    transition:transform .12s ease, filter .12s ease;
+  }
+  .spin:hover:not([disabled]){filter:brightness(1.07)}
+  .spin:active:not([disabled]){transform:translateY(1px)}
+  .spin[disabled]{
+    background:none;border-color:var(--line);color:var(--muted);
+    box-shadow:none;
+  }
+
+  .ghost{
+    appearance:none;background:none;
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:9px 16px;
+    color:var(--bone);
+    font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;
+    display:inline-flex;align-items:center;gap:8px;
+    transition:border-color .15s ease,color .15s ease;
+  }
+  .ghost:hover{border-color:var(--brass-dim);color:var(--brass)}
+  .ghost svg{width:15px;height:15px;fill:currentColor}
+
+  /* ---------- ticket ---------- */
+  .ticket{
+    align-self:center;
+    width:100%;max-width:560px;
+    min-height:118px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:8px;
+    text-align:center;
+    padding:22px 26px;
+    background:
+      radial-gradient(circle at 0 50%, transparent 8px, var(--velvet) 8px) left/51% 100% no-repeat,
+      radial-gradient(circle at 100% 50%, transparent 8px, var(--velvet) 8px) right/51% 100% no-repeat;
+    border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+  }
+  .ticket .waiting{color:var(--muted);font-size:14.5px;font-style:italic;font-family:var(--serif)}
+  .ticket .cat{
+    font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--brass);font-weight:600;
+  }
+  .ticket .act{
+    font-family:var(--serif);font-size:clamp(23px,5.4vw,34px);line-height:1.15;
+    text-wrap:balance;margin:0;
+  }
+  .ticket .note{color:var(--muted);font-size:13.5px}
+  .reveal{animation:rise .42s cubic-bezier(.16,1,.3,1) both}
+  @keyframes rise{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+
+  .toolbar{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+  /* ---------- editor ---------- */
+  .overlay{
+    position:fixed;inset:0;z-index:20;
+    background:rgba(8,6,12,.78);
+    backdrop-filter:blur(3px);
+    display:none;
+    overflow-y:auto;
+    padding:var(--sp);
+  }
+  .overlay[open]{display:block}
+  .sheet{
+    max-width:820px;margin:0 auto;
+    background:var(--velvet);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:calc(var(--sp) * 1.1);
+    display:flex;flex-direction:column;gap:18px;
+  }
+  .sheet-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+  .sheet-head h2{font-family:var(--serif);font-weight:500;font-size:26px;margin:0}
+  .sheet-head p{margin:4px 0 0;color:var(--muted);font-size:13.5px;max-width:52ch}
+  .x{
+    appearance:none;background:none;border:1px solid var(--line);border-radius:2px;
+    color:var(--bone);width:34px;height:34px;flex:none;font-size:17px;line-height:1;
+  }
+  .x:hover{border-color:var(--brass-dim);color:var(--brass)}
+
+  .cats{display:flex;flex-direction:column;gap:14px}
+  .cat-card{
+    border:1px solid var(--line);border-left:3px solid var(--swatch,var(--brass));
+    background:rgba(0,0,0,.16);
+    padding:14px 16px;
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .cat-top{display:flex;gap:10px;align-items:center}
+  input[type=text]{
+    font-family:inherit;font-size:15px;
+    background:rgba(0,0,0,.28);
+    border:1px solid var(--line);
+    border-radius:2px;
+    color:var(--bone);
+    padding:8px 10px;
+    width:100%;
+    min-width:0;
+  }
+  input[type=text]::placeholder{color:#7a6c86}
+  input[type=text]:focus{outline:none;border-color:var(--brass-dim)}
+  .cat-top input{font-family:var(--serif);font-size:17px;font-weight:600}
+
+  .items{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+  .items li{display:flex;gap:8px;align-items:center}
+  .items li input{font-size:14px;padding:6px 9px}
+  .kill{
+    appearance:none;background:none;border:1px solid transparent;border-radius:2px;
+    color:var(--muted);width:28px;height:28px;flex:none;font-size:15px;line-height:1;
+  }
+  .kill:hover{color:var(--blush);border-color:rgba(226,117,139,.4)}
+  .add-row{display:flex;gap:8px}
+  .add-row button{
+    appearance:none;background:none;border:1px dashed var(--line);border-radius:2px;
+    color:var(--muted);padding:6px 14px;font-size:12px;letter-spacing:.08em;
+    text-transform:uppercase;font-weight:600;flex:none;
+  }
+  .add-row button:hover{border-color:var(--brass-dim);color:var(--brass);border-style:solid}
+  .count{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);flex:none}
+
+  .sheet-foot{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:16px}
+  .sheet-foot .row{display:flex;gap:10px;flex-wrap:wrap}
+  details summary{
+    cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;font-weight:600;
+  }
+  details summary:hover{color:var(--brass)}
+  details[open] summary{margin-bottom:10px}
+  textarea{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:12px;line-height:1.5;
+    width:100%;min-height:150px;
+    background:rgba(0,0,0,.32);
+    border:1px solid var(--line);border-radius:2px;
+    color:var(--bone);padding:10px;
+    resize:vertical;
+  }
+  textarea:focus{outline:none;border-color:var(--brass-dim)}
+  .hint{color:var(--muted);font-size:12.5px;margin:8px 0 0}
+
+  .toast{
+    position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);
+    z-index:40;
+    background:var(--bone);color:#1b1524;
+    padding:9px 18px;border-radius:2px;
+    font-size:13px;font-weight:600;
+    opacity:0;pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
+    box-shadow:0 6px 24px rgba(0,0,0,.4);
+  }
+  .toast.up{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+  @media (prefers-reduced-motion:reduce){
+    .reveal{animation:none}
+    .toast{transition:none}
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Two spins, no debate</span>
+    <h1>Date Night <em>Roulette</em></h1>
+    <p class="sub">Spin for a category, then spin for the thing itself. Drag a wheel to flick it, or use the button.</p>
+    <div class="rule"></div>
+  </header>
+
+  <section class="stations">
+    <div class="station" id="stationA">
+      <div class="step"><span class="of">Step one</span><b id="labelA">Category</b></div>
+      <div class="board"><canvas id="wheelA" tabindex="0" aria-label="Category wheel"></canvas></div>
+      <button class="spin" id="spinA">Spin category</button>
+    </div>
+
+    <div class="station locked" id="stationB">
+      <div class="step"><span class="of">Step two</span><b id="labelB">Activity</b></div>
+      <div class="board"><canvas id="wheelB" tabindex="0" aria-label="Activity wheel"></canvas></div>
+      <button class="spin" id="spinB" disabled>Spin activity</button>
+    </div>
+  </section>
+
+  <div class="ticket" id="ticket" aria-live="polite">
+    <span class="waiting">Tonight is undecided.</span>
+  </div>
+
+  <div class="toolbar">
+    <button class="ghost" id="again">Start over</button>
+    <button class="ghost" id="editBtn">Edit the list</button>
+    <button class="ghost" id="soundBtn" aria-pressed="true">
+      <svg id="soundIcon" viewBox="0 0 24 24" aria-hidden="true"></svg><span id="soundText">Sound on</span>
+    </button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="Edit activities">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div>
+        <h2>The catalog</h2>
+        <p>Changes save to this browser as you type. To put the same list on another phone or laptop, copy the share link at the bottom and open it there.</p>
+      </div>
+      <button class="x" id="closeEdit" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="cats" id="cats"></div>
+
+    <div class="add-row">
+      <button id="addCat">+ Add category</button>
+    </div>
+
+    <div class="sheet-foot">
+      <div class="row">
+        <button class="ghost" id="copyLink">Copy share link</button>
+        <button class="ghost" id="resetCat">Restore starter list</button>
+      </div>
+      <details>
+        <summary>Backup &amp; restore (JSON)</summary>
+        <textarea id="json" spellcheck="false" aria-label="Catalog as JSON"></textarea>
+        <div class="row" style="margin-top:10px">
+          <button class="ghost" id="copyJson">Copy</button>
+          <button class="ghost" id="loadJson">Load this JSON</button>
+        </div>
+        <p class="hint" id="storageHint"></p>
+      </details>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+<span class="sr" id="live" aria-live="polite"></span>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ------------------------------------------------------------------ *
+   *  Catalog
+   * ------------------------------------------------------------------ */
+
+  const STARTER = [
+    { name: "Board Games", items: [
+      "Chess", "Checkers", "Backgammon", "Stratego", "Mancala",
+      "Connect Four", "Battleship", "Jenga", "Something cooperative"
+    ] },
+    { name: "Cards & Dice", items: [
+      "Rummikub", "Gin Rummy", "Speed", "War", "Go Fish", "Uno",
+      "Yahtzee", "A simple dice game"
+    ] },
+    { name: "Puzzles", items: [
+      "Do a puzzle", "500-piece puzzle, same section", "Crossword together",
+      "Word search together", "Sudoku side-by-side", "Memory match"
+    ] },
+    { name: "Art", items: [
+      "Draw each other", "Paint together", "Paint small canvases",
+      "Paint rocks", "Coloring books", "One picture, together"
+    ] },
+    { name: "Crafts & Building", items: [
+      "LEGO or building blocks", "Build with no instructions", "A small craft kit",
+      "Origami", "Friendship bracelets", "Diamond art", "Play-Doh or modeling clay"
+    ] },
+    { name: "Photos & Keepsakes", items: [
+      "Old printed photos", "Scrapbook or photo album", "Photo collage",
+      "Sort a small collection"
+    ] },
+    { name: "Read & Listen", items: [
+      "Read a book together", "Separate books, together", "An audiobook",
+      "A podcast", "Three songs together"
+    ] },
+    { name: "Wind Down", items: [
+      "Tea on the porch", "Look at the stars", "Couch, blanket, music",
+      "Hand or shoulder massage", "10-minute stretch together"
+    ] }
+  ];
+
+  const KEY = "dateRoulette.catalog.v2";
+  let storageOK = true;
+  let memory = null;
+
+  function readStore() {
+    try { return localStorage.getItem(KEY); }
+    catch (e) { storageOK = false; return memory; }
+  }
+  function writeStore(v) {
+    try { localStorage.setItem(KEY, v); }
+    catch (e) { storageOK = false; memory = v; }
+  }
+
+  function sanitize(raw) {
+    if (!Array.isArray(raw)) return null;
+    const out = raw.map(c => ({
+      name: String(c && c.name != null ? c.name : "").slice(0, 60),
+      items: Array.isArray(c && c.items)
+        ? c.items.map(s => String(s).slice(0, 90)).filter(s => s.trim() !== "").slice(0, 60)
+        : []
+    })).filter(c => c.name.trim() !== "").slice(0, 24);
+    return out.length ? out : null;
+  }
+
+  function clone(x) { return JSON.parse(JSON.stringify(x)); }
+
+  let catalog = (() => {
+    const shared = readHash();
+    if (shared) { writeStore(JSON.stringify(shared)); return shared; }
+    const stored = readStore();
+    if (stored) { try { const p = sanitize(JSON.parse(stored)); if (p) return p; } catch (e) {} }
+    return clone(STARTER);
+  })();
+
+  function save() { writeStore(JSON.stringify(catalog)); }
+
+  /* ---- share-link encoding ---- */
+  function b64u(str) {
+    const bytes = new TextEncoder().encode(str);
+    let bin = "";
+    for (const b of bytes) bin += String.fromCharCode(b);
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function unb64u(s) {
+    s = s.replace(/-/g, "+").replace(/_/g, "/");
+    const bin = atob(s);
+    const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  }
+  function readHash() {
+    const m = /[#&]c=([A-Za-z0-9\-_]+)/.exec(location.hash || "");
+    if (!m) return null;
+    try {
+      const parsed = sanitize(JSON.parse(unb64u(m[1])));
+      if (parsed) {
+        history.replaceState(null, "", location.pathname + location.search);
+        setTimeout(() => toast("Shared list loaded"), 400);
+        return parsed;
+      }
+    } catch (e) {}
+    return null;
+  }
+  function shareLink() {
+    return location.origin + location.pathname + location.search + "#c=" + b64u(JSON.stringify(catalog));
+  }
+
+  /* ------------------------------------------------------------------ *
+   *  Sound — peg ticks and a two-note chime
+   * ------------------------------------------------------------------ */
+
+  const sound = {
+    on: true,
+    ctx: null,
+    ensure() {
+      if (!this.on) return null;
+      if (!this.ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) { this.on = false; return null; }
+        try { this.ctx = new AC(); } catch (e) { this.on = false; return null; }
+      }
+      if (this.ctx.state === "suspended") this.ctx.resume();
+      return this.ctx;
+    },
+    tick(strength) {
+      const ac = this.ensure(); if (!ac) return;
+      const t = ac.currentTime;
+      const osc = ac.createOscillator(), g = ac.createGain();
+      osc.type = "triangle";
+      osc.frequency.value = 900 + Math.random() * 500;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.02 + 0.07 * strength, t + 0.003);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
+      osc.connect(g).connect(ac.destination);
+      osc.start(t); osc.stop(t + 0.06);
+    },
+    chime() {
+      const ac = this.ensure(); if (!ac) return;
+      const t = ac.currentTime;
+      [[659.25, 0], [987.77, 0.11]].forEach(([f, d]) => {
+        const osc = ac.createOscillator(), g = ac.createGain();
+        osc.type = "sine"; osc.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t + d);
+        g.gain.exponentialRampToValueAtTime(0.09, t + d + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.7);
+        osc.connect(g).connect(ac.destination);
+        osc.start(t + d); osc.stop(t + d + 0.75);
+      });
+    }
+  };
+
+  /* ------------------------------------------------------------------ *
+   *  Wheel — friction + peg detent physics on canvas
+   * ------------------------------------------------------------------ */
+
+  const TAU = Math.PI * 2;
+  const POINTER = -Math.PI / 2;            // flapper sits at 12 o'clock
+  const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const VISC = REDUCED ? 1.7 : 0.62;       // viscous drag  (per second)
+  const COUL = REDUCED ? 0.6 : 0.34;       // bearing friction (rad/s^2)
+  const DETENT = 5.5;                      // peg torque amplitude (rad/s^2)
+  const MAX_FLAP = 0.34;                   // flapper deflection, radians
+
+  const norm = a => ((a % TAU) + TAU) % TAU;
+  const wrapSeg = (a, seg) => a - Math.round(a / seg) * seg;
+  const shortest = d => Math.atan2(Math.sin(d), Math.cos(d));
+
+  /* Twelve lacquered jewel tones per wheel, deliberately NOT in hue order — each
+     entry jumps far around the colour circle from the last, so neighbouring wedges
+     contrast instead of sweeping a gradient. The activity wheel runs a lighter
+     band of the same hues so the two wheels stay tellable apart. */
+  const PALETTE_A = {
+    list: ["#1f6f6b", "#93304a", "#ac8b25", "#4a428f", "#a8452f", "#2f6f52",
+           "#7d3168", "#6d7a2c", "#33528f", "#b0702a", "#256a8c", "#6c3b7a"],
+    s: 55, l: 31
+  };
+  const PALETTE_B = {
+    list: ["#2a8a83", "#ad3a58", "#c2a02b", "#5a4fa8", "#c05238", "#38855f",
+           "#943b7b", "#7f8f33", "#3f61a8", "#c8832f", "#2f7fa6", "#7f478f"],
+    s: 52, l: 42
+  };
+
+  const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+
+  function colorsFor(n, pal) {
+    if (n <= pal.list.length) return pal.list.slice(0, n);
+    // Past the curated set: spread n hues evenly around the circle, then hand them
+    // out in strides of ~n/2 chosen coprime with n. Coprime makes i*stride a
+    // permutation, so every wedge gets a distinct hue AND touching wedges sit
+    // roughly opposite each other. (A golden-angle walk looks fine until the
+    // wrap-around neighbours happen to land a few degrees apart.)
+    let stride = Math.floor(n / 2);
+    while (stride > 1 && gcd(stride, n) !== 1) stride--;
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const h = (196 + ((i * stride) % n) * (360 / n)) % 360;
+      out.push("hsl(" + h.toFixed(1) + ", " + pal.s + "%, " + pal.l + "%)");
+    }
+    return out;
+  }
+
+  class Wheel {
+    constructor(canvas, palette, onStop) {
+      this.cv = canvas;
+      this.ctx = canvas.getContext("2d");
+      this.palette = palette;
+      this.onStop = onStop;
+      this.labels = [];
+      this.colors = [];
+      this.theta = Math.random() * TAU;
+      this.omega = 0;
+      this.flap = 0;
+      this.state = "idle";                 // idle | spinning | drag | settle
+      this.enabled = false;
+      this.winner = -1;
+      this.dirty = true;
+      this.pegIndex = null;
+      this.elapsed = 0;
+      this.placeholder = "";
+      this.cssSize = 300;
+      this._resize();
+      new ResizeObserver(() => this._resize()).observe(canvas);
+    }
+  }
+
+  /* Methods live on the prototype below so the physics reads as one block. */
+
+  Wheel.prototype._resize = function () {
+    const rect = this.cv.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    const w = Math.max(120, Math.round(rect.width || 300));
+    this.cssSize = w;
+    this.cv.width = Math.round(w * dpr);
+    this.cv.height = Math.round(w * dpr);
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.dirty = true;
+  };
+
+  Wheel.prototype.setSegments = function (labels, placeholder) {
+    this.labels = labels.slice();
+    this.n = this.labels.length;
+    this.colors = colorsFor(this.n, this.palette);
+    this.placeholder = placeholder || "";
+    this.winner = -1;
+    this.state = "idle";
+    this.omega = 0;
+    this.flap = 0;
+    this.pegIndex = null;
+    this.dirty = true;
+  };
+
+  Wheel.prototype.currentIndex = function () {
+    if (!this.n) return -1;
+    const seg = TAU / this.n;
+    return Math.min(this.n - 1, Math.floor(norm(POINTER - this.theta) / seg));
+  };
+
+  Wheel.prototype.spin = function (omega) {
+    if (!this.enabled || !this.n || this.state === "spinning") return;
+    this.winner = -1;
+    this.elapsed = 0;
+    if (omega === undefined) {
+      const base = REDUCED ? 6 + Math.random() * 2 : 14 + Math.random() * 7;
+      omega = base * (Math.random() < 0.5 ? -1 : 1);
+    }
+    this.omega = omega;
+    this.state = "spinning";
+    this.pegIndex = null;
+    sound.ensure();
+  };
+
+  Wheel.prototype.step = function (dt) {
+    if (this.state === "idle" || this.state === "drag") return;
+
+    if (this.state === "settle") {
+      this.settleT = Math.min(1, this.settleT + dt / 0.22);
+      const e = 1 - Math.pow(1 - this.settleT, 3);
+      this.theta = this.settleFrom + (this.settleTo - this.settleFrom) * e;
+      this.flap *= 0.85;
+      this.dirty = true;
+      if (this.settleT >= 1) {
+        this.state = "idle";
+        this.omega = 0;
+        this.winner = this.currentIndex();
+        this.dirty = true;
+        if (this.onStop) this.onStop(this.winner);
+      }
+      return;
+    }
+
+    // --- spinning ---
+    this.elapsed += dt;
+    const seg = TAU / this.n;
+    const u = wrapSeg(POINTER - this.theta - seg / 2, seg);   // 0 == a wedge is centered
+    const detent = DETENT * Math.sin(this.n * u);             // pegs pull toward center
+
+    let torque = detent - VISC * this.omega;
+    if (Math.abs(this.omega) > 1e-3) torque -= COUL * Math.sign(this.omega);
+
+    this.omega += torque * dt;
+    this.theta += this.omega * dt;
+
+    // peg passing the flapper: click + deflect
+    const idx = Math.floor(norm(POINTER - this.theta) / seg);
+    if (this.pegIndex !== null && idx !== this.pegIndex) {
+      sound.tick(Math.min(1, Math.abs(this.omega) / 14));
+    }
+    this.pegIndex = idx;
+
+    const gap = seg / 2 - Math.abs(u);                        // distance to nearest peg
+    const contact = Math.min(seg * 0.34, 0.1);
+    const push = Math.max(0, 1 - gap / contact);
+    const target = (this.omega === 0 ? 0 : Math.sign(this.omega)) * MAX_FLAP * push;
+    this.flap += (target - this.flap) * Math.min(1, dt * 34);
+
+    this.dirty = true;
+
+    const done = (Math.abs(this.omega) < 0.16 && Math.abs(detent) < COUL * 1.6) || this.elapsed > 14;
+    if (done) {
+      this.settleFrom = this.theta;
+      this.settleTo = this.theta + u;
+      this.settleT = 0;
+      this.state = "settle";
+    }
+  };
+
+  /* ---- drawing ---- */
+
+  function fitText(ctx, text, maxW) {
+    if (ctx.measureText(text).width <= maxW) return text;
+    let s = text;
+    while (s.length > 1 && ctx.measureText(s + "…").width > maxW) s = s.slice(0, -1);
+    return s.replace(/[\s,.:;-]+$/, "") + "…";
+  }
+
+  Wheel.prototype.render = function () {
+    if (!this.dirty) return;
+    this.dirty = false;
+
+    const ctx = this.ctx;
+    const size = this.cssSize;
+    const cx = size / 2, cy = size / 2;
+    const outer = size / 2 - 2;
+    const rimW = Math.max(10, size * 0.052);
+    const R = outer - rimW;
+
+    ctx.clearRect(0, 0, size, size);
+
+    // rim
+    const rimGrad = ctx.createLinearGradient(cx - outer, cy - outer, cx + outer, cy + outer);
+    rimGrad.addColorStop(0, "#f0cd7f");
+    rimGrad.addColorStop(0.35, "#c99a41");
+    rimGrad.addColorStop(0.62, "#7d5e26");
+    rimGrad.addColorStop(1, "#c39a4a");
+    ctx.beginPath(); ctx.arc(cx, cy, outer, 0, TAU);
+    ctx.fillStyle = rimGrad; ctx.fill();
+
+    ctx.beginPath(); ctx.arc(cx, cy, outer - 1, 0, TAU);
+    ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.lineWidth = 1.5; ctx.stroke();
+
+    if (!this.n) {
+      // locked / empty state
+      const empty = ctx.createRadialGradient(cx, cy - R * 0.3, R * 0.1, cx, cy, R);
+      empty.addColorStop(0, "#1a1424");
+      empty.addColorStop(1, "#100c17");
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU);
+      ctx.fillStyle = empty; ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,.5)"; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = "#8f81a0";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      const fs = Math.max(11, size * 0.05);
+      ctx.font = "600 " + fs + "px " + FONT_SANS;
+      wrapCenter(ctx, this.placeholder || "Empty", cx, cy, R * 1.35, fs * 1.35);
+      drawPointer(ctx, cx, cy, outer, R, 0);
+      return;
+    }
+
+    const seg = TAU / this.n;
+
+    // wedges
+    for (let i = 0; i < this.n; i++) {
+      const a0 = this.theta + i * seg, a1 = a0 + seg;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, R, a0, a1);
+      ctx.closePath();
+      ctx.fillStyle = this.colors[i];
+      ctx.fill();
+      if (i === this.winner) {
+        ctx.fillStyle = "rgba(255,240,210,.24)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(242,236,226,.85)";
+        ctx.lineWidth = Math.max(1.5, size * 0.006);
+        ctx.stroke();
+      }
+    }
+
+    // lacquer sheen
+    const sheen = ctx.createRadialGradient(cx - R * 0.4, cy - R * 0.55, R * 0.05, cx, cy, R * 1.15);
+    sheen.addColorStop(0, "rgba(255,255,255,.16)");
+    sheen.addColorStop(0.45, "rgba(255,255,255,.03)");
+    sheen.addColorStop(1, "rgba(0,0,0,.28)");
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.clip();
+    ctx.fillStyle = sheen; ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+    ctx.restore();
+
+    // spokes
+    ctx.strokeStyle = "rgba(12,8,18,.5)";
+    ctx.lineWidth = Math.max(1, size * 0.004);
+    for (let i = 0; i < this.n; i++) {
+      const a = this.theta + i * seg;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R);
+      ctx.stroke();
+    }
+
+    // labels
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.textBaseline = "middle";
+    const maxW = R * 0.66;
+    for (let i = 0; i < this.n; i++) {
+      const a = this.theta + (i + 0.5) * seg;
+      ctx.save();
+      ctx.rotate(a);
+      let fs = Math.min(R * 0.088, seg * R * 0.44, 19);
+      fs = Math.max(fs, 8.5);
+      ctx.font = "600 " + fs + "px " + FONT_SANS;
+      let txt = this.labels[i];
+      // shrink a little before truncating
+      let guard = 0;
+      while (ctx.measureText(txt).width > maxW && fs > 8.5 && guard++ < 12) {
+        fs = Math.max(8.5, fs - 0.9);
+        ctx.font = "600 " + fs + "px " + FONT_SANS;
+      }
+      txt = fitText(ctx, txt, maxW);
+      // Lettering is painted on the wheel: always radial, reading outward from the
+      // hub. Deliberately no upright-flip — flipping snaps 180° the moment a wedge
+      // crosses the threshold, which reads as a glitch while the wheel is turning.
+      ctx.textAlign = "right";
+      const x = R * 0.9;
+      ctx.fillStyle = i === this.winner ? "#fffaf0" : "rgba(255,255,255,.95)";
+      ctx.shadowColor = "rgba(0,0,0,.5)";
+      ctx.shadowBlur = 3;
+      ctx.shadowOffsetY = 1;
+      ctx.fillText(txt, x, 0);
+      ctx.restore();
+    }
+    ctx.restore();
+
+    // pegs on the rim, one per wedge boundary
+    const pegR = outer - rimW / 2;
+    const pegSize = Math.max(2.2, rimW * 0.2);
+    for (let i = 0; i < this.n; i++) {
+      const a = this.theta + i * seg;
+      const px = cx + Math.cos(a) * pegR, py = cy + Math.sin(a) * pegR;
+      ctx.beginPath(); ctx.arc(px, py, pegSize, 0, TAU);
+      ctx.fillStyle = "#efdcae"; ctx.fill();
+      ctx.beginPath(); ctx.arc(px + pegSize * 0.22, py + pegSize * 0.3, pegSize * 0.62, 0, TAU);
+      ctx.fillStyle = "rgba(80,55,10,.45)"; ctx.fill();
+    }
+
+    // hub
+    const hub = Math.max(14, R * 0.15);
+    const hubGrad = ctx.createLinearGradient(cx - hub, cy - hub, cx + hub, cy + hub);
+    hubGrad.addColorStop(0, "#f3d38a");
+    hubGrad.addColorStop(0.55, "#b98d3a");
+    hubGrad.addColorStop(1, "#7d5e26");
+    ctx.beginPath(); ctx.arc(cx, cy, hub, 0, TAU);
+    ctx.fillStyle = hubGrad; ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,.4)"; ctx.lineWidth = 1; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, hub * 0.3, 0, TAU);
+    ctx.fillStyle = "#2a1e08"; ctx.fill();
+
+    drawPointer(ctx, cx, cy, outer, R, this.flap);
+  };
+
+  function drawPointer(ctx, cx, cy, outer, R, flap) {
+    const pivotY = cy - outer - 1;
+    ctx.save();
+    ctx.translate(cx, pivotY);
+    ctx.rotate(flap);
+    const len = (outer - R) + R * 0.24;
+    const halfW = Math.max(4.5, outer * 0.045);
+    ctx.beginPath();
+    ctx.moveTo(-halfW, 0);
+    ctx.lineTo(halfW, 0);
+    ctx.lineTo(0, len);
+    ctx.closePath();
+    const g = ctx.createLinearGradient(-halfW, 0, halfW, len);
+    g.addColorStop(0, "#fbe9bd");
+    g.addColorStop(0.5, "#d9a94f");
+    g.addColorStop(1, "#8d6a2b");
+    ctx.fillStyle = g;
+    ctx.shadowColor = "rgba(0,0,0,.5)";
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetY = 2;
+    ctx.fill();
+    ctx.shadowColor = "transparent";
+    ctx.beginPath();
+    ctx.arc(0, 1, halfW * 0.85, 0, TAU);
+    ctx.fillStyle = "#f2ece2"; ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.lineWidth = 1; ctx.stroke();
+    ctx.restore();
+  }
+
+  function wrapCenter(ctx, text, cx, cy, maxW, lh) {
+    const words = String(text).split(" ");
+    const lines = [];
+    let line = "";
+    for (const w of words) {
+      const t = line ? line + " " + w : w;
+      if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; }
+      else line = t;
+    }
+    if (line) lines.push(line);
+    const y0 = cy - ((lines.length - 1) * lh) / 2;
+    lines.forEach((l, i) => ctx.fillText(l, cx, y0 + i * lh));
+  }
+
+  const FONT_SANS = '"Avenir Next","Avenir","Helvetica Neue",system-ui,sans-serif';
+
+  /* ---- dragging a wheel to flick it ---- */
+  function makeDraggable(wheel) {
+    const cv = wheel.cv;
+    let id = null, lastA = 0, lastT = 0, vel = 0;
+
+    const angleOf = ev => {
+      const r = cv.getBoundingClientRect();
+      return Math.atan2(ev.clientY - (r.top + r.height / 2), ev.clientX - (r.left + r.width / 2));
+    };
+
+    cv.addEventListener("pointerdown", ev => {
+      if (!wheel.enabled || !wheel.n) return;
+      id = ev.pointerId;
+      cv.setPointerCapture(id);
+      lastA = angleOf(ev);
+      lastT = performance.now();
+      vel = 0;
+      wheel.state = "drag";
+      wheel.winner = -1;
+      wheel.dirty = true;
+      ev.preventDefault();
+    });
+
+    cv.addEventListener("pointermove", ev => {
+      if (ev.pointerId !== id || wheel.state !== "drag") return;
+      const a = angleOf(ev);
+      const now = performance.now();
+      const d = shortest(a - lastA);
+      const dt = Math.max(0.008, (now - lastT) / 1000);
+      wheel.theta += d;
+      vel = vel * 0.55 + (d / dt) * 0.45;
+      lastA = a; lastT = now;
+      wheel.dirty = true;
+    });
+
+    const release = ev => {
+      if (ev.pointerId !== id) return;
+      id = null;
+      if (wheel.state !== "drag") return;
+      const min = REDUCED ? 4 : 6;
+      if (Math.abs(vel) < min) {
+        wheel.omega = 0;
+        wheel.state = "spinning";
+        wheel.elapsed = 0;
+        wheel.pegIndex = null;
+      } else {
+        wheel.spinFromDrag(Math.max(-26, Math.min(26, vel)));
+      }
+    };
+    cv.addEventListener("pointerup", release);
+    cv.addEventListener("pointercancel", release);
+
+    cv.addEventListener("keydown", ev => {
+      if (ev.key === " " || ev.key === "Enter") { ev.preventDefault(); cv.dispatchEvent(new CustomEvent("wheelspin")); }
+    });
+  }
+
+  Wheel.prototype.spinFromDrag = function (omega) {
+    this.state = "spinning";
+    this.omega = omega;
+    this.elapsed = 0;
+    this.pegIndex = null;
+    this.winner = -1;
+    sound.ensure();
+  };
+
+  /* ------------------------------------------------------------------ *
+   *  App wiring
+   * ------------------------------------------------------------------ */
+
+  const $ = id => document.getElementById(id);
+  const els = {
+    stationA: $("stationA"), stationB: $("stationB"),
+    spinA: $("spinA"), spinB: $("spinB"),
+    labelA: $("labelA"), labelB: $("labelB"),
+    ticket: $("ticket"), again: $("again"),
+    editBtn: $("editBtn"), overlay: $("overlay"), closeEdit: $("closeEdit"),
+    cats: $("cats"), addCat: $("addCat"),
+    copyLink: $("copyLink"), resetCat: $("resetCat"),
+    json: $("json"), copyJson: $("copyJson"), loadJson: $("loadJson"),
+    storageHint: $("storageHint"),
+    soundBtn: $("soundBtn"), soundIcon: $("soundIcon"), soundText: $("soundText"),
+    toast: $("toast"), live: $("live")
+  };
+
+  let chosenCat = -1;
+
+  const wheelA = new Wheel($("wheelA"), PALETTE_A, onCategory);
+  const wheelB = new Wheel($("wheelB"), PALETTE_B, onActivity);
+  makeDraggable(wheelA);
+  makeDraggable(wheelB);
+  wheelA.cv.addEventListener("wheelspin", () => wheelA.spin());
+  wheelB.cv.addEventListener("wheelspin", () => wheelB.spin());
+
+  function refreshWheels(keepChoice) {
+    wheelA.setSegments(catalog.map(c => c.name), "Add a category");
+    wheelA.enabled = catalog.length > 0;
+    els.spinA.disabled = !wheelA.enabled;
+    if (!keepChoice || chosenCat >= catalog.length) resetRound();
+    else loadActivities();
+  }
+
+  function loadActivities() {
+    const cat = catalog[chosenCat];
+    if (!cat) return;
+    wheelB.setSegments(cat.items, "No activities yet");
+    wheelB.enabled = cat.items.length > 0;
+    els.spinB.disabled = !wheelB.enabled;
+    els.stationB.classList.toggle("locked", !wheelB.enabled);
+    els.labelB.textContent = "Activity";
+  }
+
+  function resetRound() {
+    chosenCat = -1;
+    wheelA.winner = -1; wheelA.dirty = true;
+    wheelB.setSegments([], "Spin for a category first");
+    wheelB.enabled = false;
+    els.spinB.disabled = true;
+    els.stationB.classList.add("locked");
+    els.labelA.textContent = "Category";
+    els.labelB.textContent = "Activity";
+    els.ticket.innerHTML = '<span class="waiting">Tonight is undecided.</span>';
+  }
+
+  function onCategory(i) {
+    if (i < 0) return;
+    chosenCat = i;
+    els.labelA.textContent = catalog[i].name;
+    loadActivities();
+    const cat = catalog[i];
+    if (!cat.items.length) {
+      showTicket(cat.name, null, "Nothing in this category yet — add a few, or spin again.");
+    } else {
+      showTicket(cat.name, null, "Now spin for the activity.");
+    }
+    sound.tick(0.5);
+  }
+
+  function onActivity(i) {
+    if (i < 0 || chosenCat < 0) return;
+    const cat = catalog[chosenCat];
+    els.labelB.textContent = cat.items[i];
+    showTicket(cat.name, cat.items[i], null);
+    sound.chime();
+  }
+
+  function showTicket(cat, act, note) {
+    const t = els.ticket;
+    t.innerHTML = "";
+    const box = document.createElement("div");
+    box.className = "reveal";
+    box.style.display = "flex";
+    box.style.flexDirection = "column";
+    box.style.gap = "8px";
+    box.style.alignItems = "center";
+
+    const c = document.createElement("span");
+    c.className = "cat";
+    c.textContent = cat;
+    box.appendChild(c);
+
+    if (act) {
+      const a = document.createElement("p");
+      a.className = "act";
+      a.textContent = act;
+      box.appendChild(a);
+      els.live.textContent = "Tonight: " + cat + ", " + act;
+    } else if (note) {
+      const n = document.createElement("span");
+      n.className = "note";
+      n.textContent = note;
+      box.appendChild(n);
+      els.live.textContent = cat + ". " + note;
+    }
+    t.appendChild(box);
+  }
+
+  els.spinA.addEventListener("click", () => { resetRound(); wheelA.spin(); });
+  els.spinB.addEventListener("click", () => wheelB.spin());
+  els.again.addEventListener("click", () => { resetRound(); refreshWheels(false); });
+
+  /* ---- sound toggle ---- */
+  const ICON_ON = '<path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2-3.7v7.4a4.5 4.5 0 0 0 2-3.7zm-2-8v2a6 6 0 0 1 0 12v2a8 8 0 0 0 0-16z"/>';
+  const ICON_OFF = '<path d="M4 9v6h4l5 4V5L8 9H4zm15.1 3 2.5-2.5-1.4-1.4-2.5 2.5-2.5-2.5-1.4 1.4 2.5 2.5-2.5 2.5 1.4 1.4 2.5-2.5 2.5 2.5 1.4-1.4-2.5-2.5z"/>';
+  function paintSound() {
+    els.soundIcon.innerHTML = sound.on ? ICON_ON : ICON_OFF;
+    els.soundText.textContent = sound.on ? "Sound on" : "Sound off";
+    els.soundBtn.setAttribute("aria-pressed", String(sound.on));
+  }
+  els.soundBtn.addEventListener("click", () => {
+    sound.on = !sound.on;
+    paintSound();
+    if (sound.on) sound.tick(0.6);
+  });
+  paintSound();
+
+  /* ---- editor ---- */
+  function openEditor() {
+    els.overlay.setAttribute("open", "");
+    renderEditor();
+    els.json.value = JSON.stringify(catalog, null, 2);
+    els.storageHint.textContent = storageOK
+      ? "Saved in this browser only. The share link carries the whole list."
+      : "This browser is blocking local storage, so edits last only for this visit — copy the share link to keep them.";
+    els.closeEdit.focus();
+  }
+  function closeEditor() {
+    els.overlay.removeAttribute("open");
+    els.editBtn.focus();
+  }
+  els.editBtn.addEventListener("click", openEditor);
+  els.closeEdit.addEventListener("click", closeEditor);
+  els.overlay.addEventListener("click", e => { if (e.target === els.overlay) closeEditor(); });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && els.overlay.hasAttribute("open")) closeEditor();
+  });
+
+  function renderEditor() {
+    els.cats.innerHTML = "";
+    const swatches = colorsFor(catalog.length, PALETTE_A);
+    catalog.forEach((cat, ci) => {
+      const card = document.createElement("div");
+      card.className = "cat-card";
+      card.style.setProperty("--swatch", swatches[ci]);
+
+      const top = document.createElement("div");
+      top.className = "cat-top";
+      const name = document.createElement("input");
+      name.type = "text";
+      name.value = cat.name;
+      name.placeholder = "Category name";
+      name.setAttribute("aria-label", "Category name");
+      name.addEventListener("input", () => {
+        cat.name = name.value;
+        commit(true);
+      });
+      const count = document.createElement("span");
+      count.className = "count";
+      count.textContent = cat.items.length + (cat.items.length === 1 ? " item" : " items");
+      const del = document.createElement("button");
+      del.className = "kill";
+      del.type = "button";
+      del.innerHTML = "&times;";
+      del.title = "Remove category";
+      del.setAttribute("aria-label", "Remove category " + cat.name);
+      del.addEventListener("click", () => {
+        catalog.splice(ci, 1);
+        commit(false);
+        renderEditor();
+      });
+      top.append(name, count, del);
+
+      const ul = document.createElement("ul");
+      ul.className = "items";
+      cat.items.forEach((item, ii) => {
+        const li = document.createElement("li");
+        const inp = document.createElement("input");
+        inp.type = "text";
+        inp.value = item;
+        inp.setAttribute("aria-label", "Activity");
+        inp.addEventListener("input", () => {
+          cat.items[ii] = inp.value;
+          commit(true);
+        });
+        const kill = document.createElement("button");
+        kill.className = "kill";
+        kill.type = "button";
+        kill.innerHTML = "&times;";
+        kill.title = "Remove activity";
+        kill.setAttribute("aria-label", "Remove " + item);
+        kill.addEventListener("click", () => {
+          cat.items.splice(ii, 1);
+          commit(false);
+          renderEditor();
+        });
+        li.append(inp, kill);
+        ul.appendChild(li);
+      });
+
+      const addRow = document.createElement("div");
+      addRow.className = "add-row";
+      const newItem = document.createElement("input");
+      newItem.type = "text";
+      newItem.placeholder = "Add an activity…";
+      newItem.setAttribute("aria-label", "New activity in " + cat.name);
+      const addBtn = document.createElement("button");
+      addBtn.type = "button";
+      addBtn.textContent = "Add";
+      const doAdd = () => {
+        const v = newItem.value.trim();
+        if (!v) return;
+        cat.items.push(v);
+        newItem.value = "";
+        commit(false);
+        renderEditor();
+        const cards = els.cats.children[ci];
+        if (cards) cards.querySelector(".add-row input").focus();
+      };
+      addBtn.addEventListener("click", doAdd);
+      newItem.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); doAdd(); } });
+      addRow.append(newItem, addBtn);
+
+      card.append(top, ul, addRow);
+      els.cats.appendChild(card);
+    });
+  }
+
+  function commit() {
+    save();
+    els.json.value = JSON.stringify(catalog, null, 2);
+    refreshWheels(true);
+  }
+
+  els.addCat.addEventListener("click", () => {
+    catalog.push({ name: "New category", items: [] });
+    commit(false);
+    renderEditor();
+    const last = els.cats.lastElementChild;
+    if (last) { const i = last.querySelector(".cat-top input"); i.focus(); i.select(); }
+  });
+
+  els.resetCat.addEventListener("click", () => {
+    catalog = clone(STARTER);
+    commit(false);
+    renderEditor();
+    toast("Starter list restored");
+  });
+
+  els.copyLink.addEventListener("click", () => copyText(shareLink(), "Share link copied"));
+  els.copyJson.addEventListener("click", () => copyText(els.json.value, "JSON copied"));
+  els.loadJson.addEventListener("click", () => {
+    let parsed = null;
+    try { parsed = sanitize(JSON.parse(els.json.value)); } catch (e) {}
+    if (!parsed) { toast("That JSON isn't a valid list"); return; }
+    catalog = parsed;
+    commit(false);
+    renderEditor();
+    toast("List loaded");
+  });
+
+  function copyText(text, msg) {
+    const done = () => toast(msg);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, () => fallback());
+    } else fallback();
+    function fallback() {
+      els.json.value = text;
+      els.json.focus();
+      els.json.select();
+      toast("Copy blocked here — selected it for you");
+    }
+  }
+
+  let toastTimer = null;
+  function toast(msg) {
+    els.toast.textContent = msg;
+    els.toast.classList.add("up");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => els.toast.classList.remove("up"), 2200);
+  }
+
+  /* ---- ticker ---- */
+  const SUB = 1 / 240;
+  let last = performance.now();
+  function frame(now) {
+    let dt = (now - last) / 1000;
+    last = now;
+    if (dt > 0.05) dt = 0.05;
+    let acc = dt;
+    while (acc > 0) {
+      const h = Math.min(SUB, acc);
+      wheelA.step(h);
+      wheelB.step(h);
+      acc -= h;
+    }
+    wheelA.render();
+    wheelB.render();
+    requestAnimationFrame(frame);
+  }
+
+  document.addEventListener("keydown", e => {
+    if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    if (e.key !== " ") return;
+    e.preventDefault();
+    if (chosenCat < 0) { resetRound(); wheelA.spin(); }
+    else if (wheelB.enabled) wheelB.spin();
+  });
+
+  // A share link pasted into an already-open tab only changes the hash — no reload.
+  window.addEventListener("hashchange", () => {
+    const shared = readHash();
+    if (!shared) return;
+    catalog = shared;
+    save();
+    refreshWheels(false);
+    if (els.overlay.hasAttribute("open")) renderEditor();
+    els.json.value = JSON.stringify(catalog, null, 2);
+  });
+
+  refreshWheels(false);
+  requestAnimationFrame(frame);
+})();
+</script>
