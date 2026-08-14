@@ -44,11 +44,7 @@
   }
 
   /* ---------- header ---------- */
-  header{display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center}
-  .eyebrow{
-    font-size:11px;letter-spacing:.24em;text-transform:uppercase;
-    color:var(--brass);font-weight:600;
-  }
+  header{display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center}
   h1{
     font-family:var(--serif);
     font-weight:500;
@@ -64,13 +60,66 @@
     background:linear-gradient(90deg,transparent,var(--line) 20%,var(--brass-dim) 50%,var(--line) 80%,transparent);
   }
 
+  /* ---------- sound: round, fixed, thumb-reachable on a phone ---------- */
+  .sound-fab{
+    position:fixed;
+    top:max(12px, env(safe-area-inset-top));
+    right:max(12px, env(safe-area-inset-right));
+    z-index:15;
+    width:44px;height:44px;
+    display:grid;place-items:center;
+    border-radius:50%;
+    border:1px solid var(--brass-dim);
+    background:linear-gradient(180deg,var(--velvet-hi),var(--velvet));
+    color:var(--brass);
+    box-shadow:0 2px 10px rgba(0,0,0,.4);
+    transition:color .15s ease,border-color .15s ease;
+  }
+  .sound-fab svg{width:20px;height:20px;fill:currentColor}
+  .sound-fab:hover{border-color:var(--brass);color:var(--bone)}
+  .sound-fab[aria-pressed="false"]{color:var(--muted);border-color:var(--line)}
+
   /* ---------- wheels ---------- */
   .stations{
     display:grid;
     grid-template-columns:repeat(2,minmax(0,1fr));
     gap:calc(var(--sp) * 1.1);
   }
-  @media (max-width:640px){ .stations{grid-template-columns:1fr} }
+
+  .dots{display:none}
+
+  /* On a phone the three cards become one horizontally-snapping row. */
+  @media (max-width:640px){
+    .stations{
+      grid-template-columns:none;
+      grid-auto-flow:column;
+      grid-auto-columns:100%;
+      gap:12px;
+      overflow-x:auto;
+      overscroll-behavior-x:contain;
+      scroll-snap-type:x mandatory;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width:none;
+      /* room for the card shadow so it isn't clipped by the scroll box */
+      padding-bottom:4px;
+    }
+    .stations::-webkit-scrollbar{display:none}
+    .stations > *{scroll-snap-align:center;scroll-snap-stop:always}
+
+    header{padding-top:30px}   /* clears the fixed sound button */
+
+    .dots{
+      display:flex;gap:8px;justify-content:center;align-items:center;
+      margin-top:-4px;
+    }
+    .dot{
+      width:6px;height:6px;border-radius:50%;
+      background:var(--line);
+      transition:background .2s ease, transform .2s ease;
+      cursor:pointer;
+    }
+    .dot.on{background:var(--brass);transform:scale(1.25)}
+  }
 
   .station{
     display:flex;flex-direction:column;align-items:center;gap:12px;
@@ -147,6 +196,8 @@
 
   /* ---------- ticket ---------- */
   .ticket{
+    grid-column:1 / -1;
+    justify-self:center;
     align-self:center;
     width:100%;max-width:560px;
     min-height:118px;
@@ -169,6 +220,29 @@
     text-wrap:balance;margin:0;
   }
   .ticket .note{color:var(--muted);font-size:13.5px}
+  .ticket .how{
+    color:var(--bone);opacity:.82;
+    font-size:14.5px;line-height:1.55;
+    max-width:44ch;margin:2px 0 0;
+    text-wrap:pretty;
+  }
+  .ticket .again{margin-top:12px}
+
+  /* On mobile the ticket is card three of the scroller, so it gets the same
+     framing as the two wheel cards instead of the perforated-ticket edges. */
+  @media (max-width:640px){
+    .ticket{
+      grid-column:auto;
+      max-width:none;
+      justify-self:stretch;
+      align-self:stretch;      /* match the wheel cards so the row reads as one set */
+      background:linear-gradient(180deg,var(--velvet-hi),var(--velvet));
+      border:1px solid var(--line);
+      border-radius:4px;
+      padding:calc(var(--sp) * .85) var(--sp);
+    }
+  }
+
   .reveal{animation:rise .42s cubic-bezier(.16,1,.3,1) both}
   @keyframes rise{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
 
@@ -223,9 +297,19 @@
   input[type=text]:focus{outline:none;border-color:var(--brass-dim)}
   .cat-top input{font-family:var(--serif);font-size:17px;font-weight:600}
 
-  .items{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
-  .items li{display:flex;gap:8px;align-items:center}
+  .items{display:flex;flex-direction:column;gap:12px;margin:0;padding:0;list-style:none}
+  .items li{display:flex;flex-direction:column;gap:4px}
+  .item-main{display:flex;gap:8px;align-items:center}
   .items li input{font-size:14px;padding:6px 9px}
+  textarea.how{
+    font-family:var(--sans);
+    font-size:12.5px;line-height:1.5;
+    min-height:0;height:46px;
+    padding:6px 9px;
+    color:var(--muted);
+    resize:vertical;
+  }
+  textarea.how:focus{color:var(--bone)}
   .kill{
     appearance:none;background:none;border:1px solid transparent;border-radius:2px;
     color:var(--muted);width:28px;height:28px;flex:none;font-size:15px;line-height:1;
@@ -280,15 +364,18 @@
   }
 </style>
 
+<button class="sound-fab" id="soundBtn" aria-pressed="true" aria-label="Sound on">
+  <svg id="soundIcon" viewBox="0 0 24 24" aria-hidden="true"></svg>
+</button>
+
 <div class="wrap">
   <header>
-    <span class="eyebrow">Two spins, no debate</span>
     <h1>Date Night <em>Roulette</em></h1>
-    <p class="sub">Spin for a category, then spin for the thing itself. Drag a wheel to flick it, or use the button.</p>
+    <p class="sub">Spin to get a perfect fun and easy date night activity! Searches <span id="actCount">50</span> activities</p>
     <div class="rule"></div>
   </header>
 
-  <section class="stations">
+  <section class="stations" id="stations">
     <div class="station" id="stationA">
       <div class="step"><span class="of">Step one</span><b id="labelA">Category</b></div>
       <div class="board"><canvas id="wheelA" tabindex="0" aria-label="Category wheel"></canvas></div>
@@ -300,18 +387,18 @@
       <div class="board"><canvas id="wheelB" tabindex="0" aria-label="Activity wheel"></canvas></div>
       <button class="spin" id="spinB" disabled>Spin activity</button>
     </div>
+
+    <div class="ticket" id="ticket" aria-live="polite">
+      <span class="waiting">Tonight is undecided.</span>
+    </div>
   </section>
 
-  <div class="ticket" id="ticket" aria-live="polite">
-    <span class="waiting">Tonight is undecided.</span>
+  <div class="dots" id="dots" aria-hidden="true">
+    <span class="dot on"></span><span class="dot"></span><span class="dot"></span>
   </div>
 
   <div class="toolbar">
-    <button class="ghost" id="again">Start over</button>
     <button class="ghost" id="editBtn">Edit the list</button>
-    <button class="ghost" id="soundBtn" aria-pressed="true">
-      <svg id="soundIcon" viewBox="0 0 24 24" aria-hidden="true"></svg><span id="soundText">Sound on</span>
-    </button>
   </div>
 </div>
 
@@ -360,40 +447,87 @@
    *  Catalog
    * ------------------------------------------------------------------ */
 
+  /* Each activity is { n: short label for the wedge, how: what to actually do }.
+     The instruction is deliberately not a restatement of the label — it only ever
+     shows on the result card, so it should add something the title doesn't. */
   const STARTER = [
     { name: "Board Games", items: [
-      "Chess", "Checkers", "Backgammon", "Stratego", "Mancala",
-      "Connect Four", "Battleship", "Jenga", "Something cooperative"
+      { n: "Chess", how: "Put ten minutes on each side's clock so a whole game fits one sitting. If you're mismatched, the stronger player starts without a queen." },
+      { n: "Checkers", how: "Best of three, switching who moves first each game. Agree up front whether captures are forced — it changes the whole game." },
+      { n: "Backgammon", how: "Play to five points rather than a single game, so the dice even out. Leave the doubling cube in only if you both know it." },
+      { n: "Stratego", how: "Set up out of sight of each other, then play. Guard the flag with at least two bombs and keep one miner alive to clear theirs." },
+      { n: "Mancala", how: "Four stones per pit, play until one side is empty. Hunt for moves that drop your last stone in your own store — that's a free turn." },
+      { n: "Connect Four", how: "Quick best of five, alternating who drops first. Watch the diagonals; that's where nearly every game is actually won." },
+      { n: "Battleship", how: "Standard fleet, call your shots out loud. Search in a diagonal pattern instead of sweeping row by row — you'll find ships twice as fast." },
+      { n: "Jenga", how: "One hand only, and your non-writing hand makes it much harder. Whoever topples it owes the other a refill." },
+      { n: "Something cooperative", how: "Pick a game where you're on the same side — Pandemic, Forbidden Island, Hanabi. Rule: every move gets talked through out loud." }
     ] },
     { name: "Cards & Dice", items: [
-      "Rummikub", "Gin Rummy", "Speed", "War", "Go Fish", "Uno",
-      "Yahtzee", "A simple dice game"
+      { n: "Rummikub", how: "Fourteen tiles each, first to play them all takes the round. Score across three rounds so one bad draw doesn't decide the night." },
+      { n: "Gin Rummy", how: "Deal ten each and play to a hundred points. Knock early with low deadwood instead of holding out for a perfect gin." },
+      { n: "Speed", how: "Two stacks, two piles, no turns — just go. Reshuffle and replay immediately; a round is over in about a minute." },
+      { n: "War", how: "Split the deck and flip. There is zero skill in it, which is the point — it's the one card game you can talk straight through." },
+      { n: "Go Fish", how: "Seven cards each, ask for ranks by name. If one of you keeps winning, that person plays with five cards instead." },
+      { n: "Uno", how: "Settle whether stacking and draw-until-you-play are legal before you deal — that's the only real argument. Play to 500 across hands." },
+      { n: "Yahtzee", how: "One scorecard each, thirteen rounds. Lock in the 63-point upper-section bonus early rather than fishing for a Yahtzee that won't come." },
+      { n: "A simple dice game", how: "Five dice and a notepad: Pig to 100, or Farkle to 5,000. No board, no setup, ten minutes either way." }
     ] },
     { name: "Puzzles", items: [
-      "Do a puzzle", "500-piece puzzle, same section", "Crossword together",
-      "Word search together", "Sudoku side-by-side", "Memory match"
+      { n: "Do a puzzle", how: "Pick something 300 pieces or under so it actually gets finished tonight. Edges first, then sort by colour into the box lid." },
+      { n: "500-piece puzzle, same section", how: "Deliberately work the same corner together instead of splitting the box in half. It's slower, and it's the version where you talk." },
+      { n: "Crossword together", how: "One grid, one pen, passed back and forth. Fill every gimme first, then attack the long answers through their crossings." },
+      { n: "Word search together", how: "Same page, race for different words. Whoever finds fewer picks what you do next." },
+      { n: "Sudoku side-by-side", how: "Same puzzle, two copies, no comparing until you're both done. Then compare where you each got stuck — it's never the same square." },
+      { n: "Memory match", how: "Lay cards face down in a grid and take turns flipping pairs. Use half a deck to keep it under ten minutes." }
     ] },
     { name: "Art", items: [
-      "Draw each other", "Paint together", "Paint small canvases",
-      "Paint rocks", "Coloring books", "One picture, together"
+      { n: "Draw each other", how: "Twenty minutes, one portrait each, then swap and look. No erasing, and no apologising for how it came out." },
+      { n: "Paint together", how: "One surface, both of you painting at the same time. Don't plan it — just react to whatever the other person put down last." },
+      { n: "Paint small canvases", how: "One small canvas each on the same prompt, no peeking until you're both finished. Hang them side by side afterwards." },
+      { n: "Paint rocks", how: "Wash and dry a few smooth stones, then paint bold simple shapes — fine detail doesn't survive on rock. Seal them and leave one somewhere on a walk." },
+      { n: "Coloring books", how: "A page each with something playing in the background. The point is busy hands and a quiet head, not a finished piece." },
+      { n: "One picture, together", how: "Split one complicated page down the middle and each colour your half. Agree the palette first so it still reads as a single picture." },
+      { n: "Step-by-step drawing", how: "Queue a follow-along drawing tutorial and both draw the same subject, pausing together after each step so neither of you falls behind." },
+      { n: "Step-by-step painting", how: "Follow a guided painting video, pausing at the end of each stage to let layers dry and stay in sync. Craft acrylics and a cheap canvas are plenty." }
     ] },
     { name: "Crafts & Building", items: [
-      "LEGO or building blocks", "Build with no instructions", "A small craft kit",
-      "Origami", "Friendship bracelets", "Diamond art", "Play-Doh or modeling clay"
+      { n: "LEGO or building blocks", how: "Build a real set from the instructions, one numbered bag at a time, trading off who does each step." },
+      { n: "Build with no instructions", how: "Tip the bin out and set one constraint — a bridge, a tower, something with wheels. Twenty-minute limit, then show each other." },
+      { n: "A small craft kit", how: "Open one of the kits you've been saving for a good moment and finish it tonight, start to end." },
+      { n: "Origami", how: "Learn one new model together from a video, then fold it twice each — the second one always comes out clean." },
+      { n: "Friendship bracelets", how: "Three colours, four strands, basic spiral knot. Make them for each other rather than for yourselves, and actually wear them." },
+      { n: "Diamond art", how: "Work the same panel from opposite corners. Finish one colour all the way across before you open the next bag." },
+      { n: "Play-Doh or modeling clay", how: "Two colours each, ten minutes on a timer, then guess what the other person made." }
     ] },
     { name: "Photos & Keepsakes", items: [
-      "Old printed photos", "Scrapbook or photo album", "Photo collage",
-      "Sort a small collection"
+      { n: "Old printed photos", how: "Get the box out and go through it slowly. Say who's in each one out loud — that's the part nobody will remember later." },
+      { n: "Scrapbook or photo album", how: "Fill two pages, not the whole book, so it stays a pleasure. Write the date and one sentence beside each photo." },
+      { n: "Photo collage", how: "Pick one theme — a single trip, a single year — then print or cut and lay the whole thing out before you glue anything." },
+      { n: "Sort a small collection", how: "Choose one contained pile: photos, cards, ticket stubs. Three piles — keep, toss, undecided — and stop when that pile is done." }
     ] },
     { name: "Read & Listen", items: [
-      "Read a book together", "Separate books, together", "An audiobook",
-      "A podcast", "Three songs together"
+      { n: "Read a book together", how: "One book, one of you reading aloud, swapping at chapter breaks. Stop on a cliffhanger so there's a reason to pick it up again." },
+      { n: "Separate books, together", how: "Same couch, own books, phones in another room. Read the good sentences out loud when you hit them." },
+      { n: "An audiobook", how: "Something neither of you has read, played on a speaker rather than headphones, lights low. Twenty minutes is a real chunk of a book." },
+      { n: "A podcast", how: "Queue one episode you've both never heard and let it run. Pause it whenever either of you wants to argue with it." },
+      { n: "Three songs together", how: "One song you pick, one they pick, one neither of you knows. Nothing else on, and say why you chose yours." }
     ] },
     { name: "Wind Down", items: [
-      "Tea on the porch", "Look at the stars", "Couch, blanket, music",
-      "Hand or shoulder massage", "10-minute stretch together"
+      { n: "Tea on the porch", how: "Boil the water, take it outside, leave the phones indoors. Stay until the mugs are empty." },
+      { n: "Look at the stars", how: "Get away from the porch light and give your eyes a full ten minutes to adjust — that's when the faint ones appear. A sky-map app will name anything bright." },
+      { n: "Couch, blanket, music", how: "Lights off, one album, both horizontal. No talking through the first side." },
+      { n: "Hand or shoulder massage", how: "Ten minutes each on a timer, then swap so it stays even. Use lotion, and ask about pressure instead of guessing." },
+      { n: "10-minute stretch together", how: "Follow a short guided stretch on the floor side by side. Breathe out on the way into each stretch and don't bounce." }
     ] }
   ];
+
+  /* Built-in instruction for each activity name. Share links leave out any
+     instruction that still matches its built-in — otherwise all 52 of them ride
+     along in the URL and it grows past 10,000 characters, which messaging apps
+     truncate. A link therefore carries names plus only the wording you changed,
+     and an older names-only link picks up the current instructions for free. */
+  const DEFAULT_HOW = new Map();
+  STARTER.forEach(c => c.items.forEach(i => DEFAULT_HOW.set(i.n, i.how)));
 
   const KEY = "dateRoulette.catalog.v2";
   let storageOK = true;
@@ -408,16 +542,35 @@
     catch (e) { storageOK = false; memory = v; }
   }
 
+  // Tolerates a bare string per item as well as { n, how } — older share links and
+  // hand-written JSON both stay loadable.
+  function sanitizeItem(raw) {
+    if (typeof raw === "string") {
+      const n = raw.slice(0, 90);
+      return { n: n, how: DEFAULT_HOW.get(n) || "" };
+    }
+    if (raw && typeof raw === "object") {
+      const n = String(raw.n != null ? raw.n : (raw.name != null ? raw.name : "")).slice(0, 90);
+      // A missing instruction means "whatever the built-in says" — that's what keeps
+      // share links small. An explicit "" is respected as a deliberately blank one.
+      const how = raw.how != null ? String(raw.how) : (DEFAULT_HOW.get(n) || "");
+      return { n: n, how: how.slice(0, 400) };
+    }
+    return { n: "", how: "" };
+  }
+
   function sanitize(raw) {
     if (!Array.isArray(raw)) return null;
     const out = raw.map(c => ({
       name: String(c && c.name != null ? c.name : "").slice(0, 60),
       items: Array.isArray(c && c.items)
-        ? c.items.map(s => String(s).slice(0, 90)).filter(s => s.trim() !== "").slice(0, 60)
+        ? c.items.map(sanitizeItem).filter(i => i.n.trim() !== "").slice(0, 60)
         : []
     })).filter(c => c.name.trim() !== "").slice(0, 24);
     return out.length ? out : null;
   }
+
+  const countActivities = () => catalog.reduce((sum, c) => sum + c.items.length, 0);
 
   function clone(x) { return JSON.parse(JSON.stringify(x)); }
 
@@ -458,7 +611,11 @@
     return null;
   }
   function shareLink() {
-    return location.origin + location.pathname + location.search + "#c=" + b64u(JSON.stringify(catalog));
+    const packed = catalog.map(c => ({
+      name: c.name,
+      items: c.items.map(i => DEFAULT_HOW.get(i.n) === i.how ? { n: i.n } : { n: i.n, how: i.how })
+    }));
+    return location.origin + location.pathname + location.search + "#c=" + b64u(JSON.stringify(packed));
   }
 
   /* ------------------------------------------------------------------ *
@@ -570,6 +727,7 @@
       this.state = "idle";                 // idle | spinning | drag | settle
       this.enabled = false;
       this.winner = -1;
+      this.locked = false;                 // result committed (see decided/lockIn)
       this.dirty = true;
       this.pegIndex = null;
       this.elapsed = 0;
@@ -599,6 +757,7 @@
     this.colors = colorsFor(this.n, this.palette);
     this.placeholder = placeholder || "";
     this.winner = -1;
+    this.locked = false;
     this.state = "idle";
     this.omega = 0;
     this.flap = 0;
@@ -612,9 +771,32 @@
     return Math.min(this.n - 1, Math.floor(norm(POINTER - this.theta) / seg));
   };
 
+  /* Commit the result the instant physics makes it inevitable, rather than waiting
+     for the wheel to visually stop. The wheel is inside one detent well; escaping to
+     a neighbouring wedge means climbing the peg barrier. With detent torque
+     D*sin(n*u) the potential is U(u) = (D/n)(1 - cos(n*u)), so the barrier height is
+     2D/n. Friction only ever removes energy, so once total energy sits below that
+     barrier the wheel can never leave this well — the wedge is decided, and every
+     index inside a well is the same one. The spin then carries on purely for show. */
+  Wheel.prototype.decided = function (u) {
+    const barrier = 2 * DETENT / this.n;
+    const energy = 0.5 * this.omega * this.omega
+                 + (DETENT / this.n) * (1 - Math.cos(this.n * u));
+    return energy < barrier * 0.985;   // small margin for integration error
+  };
+
+  Wheel.prototype.lockIn = function () {
+    if (this.locked) return;
+    this.locked = true;
+    this.winner = this.currentIndex();
+    this.dirty = true;
+    if (this.onStop) this.onStop(this.winner);
+  };
+
   Wheel.prototype.spin = function (omega) {
     if (!this.enabled || !this.n || this.state === "spinning") return;
     this.winner = -1;
+    this.locked = false;
     this.elapsed = 0;
     if (omega === undefined) {
       const base = REDUCED ? 6 + Math.random() * 2 : 14 + Math.random() * 7;
@@ -638,9 +820,8 @@
       if (this.settleT >= 1) {
         this.state = "idle";
         this.omega = 0;
-        this.winner = this.currentIndex();
         this.dirty = true;
-        if (this.onStop) this.onStop(this.winner);
+        this.lockIn();          // no-op if the result was already committed
       }
       return;
     }
@@ -656,6 +837,11 @@
 
     this.omega += torque * dt;
     this.theta += this.omega * dt;
+
+    // Announce the winner as soon as it can no longer change.
+    if (!this.locked && this.decided(wrapSeg(POINTER - this.theta - seg / 2, seg))) {
+      this.lockIn();
+    }
 
     // peg passing the flapper: click + deflect
     const idx = Math.floor(norm(POINTER - this.theta) / seg);
@@ -898,6 +1084,7 @@
       vel = 0;
       wheel.state = "drag";
       wheel.winner = -1;
+      wheel.locked = false;
       wheel.dirty = true;
       ev.preventDefault();
     });
@@ -924,6 +1111,7 @@
         wheel.state = "spinning";
         wheel.elapsed = 0;
         wheel.pegIndex = null;
+        wheel.locked = false;
       } else {
         wheel.spinFromDrag(Math.max(-26, Math.min(26, vel)));
       }
@@ -942,6 +1130,7 @@
     this.elapsed = 0;
     this.pegIndex = null;
     this.winner = -1;
+    this.locked = false;
     sound.ensure();
   };
 
@@ -954,15 +1143,51 @@
     stationA: $("stationA"), stationB: $("stationB"),
     spinA: $("spinA"), spinB: $("spinB"),
     labelA: $("labelA"), labelB: $("labelB"),
-    ticket: $("ticket"), again: $("again"),
+    ticket: $("ticket"), stations: $("stations"), dots: $("dots"),
+    actCount: $("actCount"),
     editBtn: $("editBtn"), overlay: $("overlay"), closeEdit: $("closeEdit"),
     cats: $("cats"), addCat: $("addCat"),
     copyLink: $("copyLink"), resetCat: $("resetCat"),
     json: $("json"), copyJson: $("copyJson"), loadJson: $("loadJson"),
     storageHint: $("storageHint"),
-    soundBtn: $("soundBtn"), soundIcon: $("soundIcon"), soundText: $("soundText"),
+    soundBtn: $("soundBtn"), soundIcon: $("soundIcon"),
     toast: $("toast"), live: $("live")
   };
+
+  /* ---- mobile card scroller ---------------------------------------------- */
+  const cards = () => [els.stationA, els.stationB, els.ticket];
+  const isScroller = () => els.stations.scrollWidth > els.stations.clientWidth + 4;
+
+  function scrollToCard(el, smooth) {
+    if (!isScroller()) return;
+    const c = els.stations.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    els.stations.scrollTo({
+      left: els.stations.scrollLeft + (r.left - c.left),
+      behavior: smooth && !REDUCED ? "smooth" : "auto"
+    });
+  }
+
+  let dotRaf = 0;
+  function syncDots() {
+    if (!isScroller()) return;
+    const mid = els.stations.getBoundingClientRect().left + els.stations.clientWidth / 2;
+    let best = 0, bestD = Infinity;
+    cards().forEach((el, i) => {
+      const r = el.getBoundingClientRect();
+      const d = Math.abs(r.left + r.width / 2 - mid);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    Array.prototype.forEach.call(els.dots.children,
+      (d, i) => d.classList.toggle("on", i === best));
+  }
+  els.stations.addEventListener("scroll", () => {
+    if (dotRaf) return;
+    dotRaf = requestAnimationFrame(() => { dotRaf = 0; syncDots(); });
+  }, { passive: true });
+  Array.prototype.forEach.call(els.dots.children, (dot, i) => {
+    dot.addEventListener("click", () => scrollToCard(cards()[i], true));
+  });
 
   let chosenCat = -1;
 
@@ -973,27 +1198,28 @@
   wheelA.cv.addEventListener("wheelspin", () => wheelA.spin());
   wheelB.cv.addEventListener("wheelspin", () => wheelB.spin());
 
-  function refreshWheels(keepChoice) {
+  function refreshWheels(keepChoice, smooth) {
     wheelA.setSegments(catalog.map(c => c.name), "Add a category");
     wheelA.enabled = catalog.length > 0;
     els.spinA.disabled = !wheelA.enabled;
-    if (!keepChoice || chosenCat >= catalog.length) resetRound();
+    els.actCount.textContent = countActivities();
+    if (!keepChoice || chosenCat >= catalog.length) resetRound(smooth);
     else loadActivities();
   }
 
   function loadActivities() {
     const cat = catalog[chosenCat];
     if (!cat) return;
-    wheelB.setSegments(cat.items, "No activities yet");
+    wheelB.setSegments(cat.items.map(i => i.n), "No activities yet");
     wheelB.enabled = cat.items.length > 0;
     els.spinB.disabled = !wheelB.enabled;
     els.stationB.classList.toggle("locked", !wheelB.enabled);
     els.labelB.textContent = "Activity";
   }
 
-  function resetRound() {
+  function resetRound(smooth) {
     chosenCat = -1;
-    wheelA.winner = -1; wheelA.dirty = true;
+    wheelA.winner = -1; wheelA.locked = false; wheelA.dirty = true;
     wheelB.setSegments([], "Spin for a category first");
     wheelB.enabled = false;
     els.spinB.disabled = true;
@@ -1001,6 +1227,8 @@
     els.labelA.textContent = "Category";
     els.labelB.textContent = "Activity";
     els.ticket.innerHTML = '<span class="waiting">Tonight is undecided.</span>';
+    scrollToCard(els.stationA, smooth === true);
+    syncDots();
   }
 
   function onCategory(i) {
@@ -1009,23 +1237,25 @@
     els.labelA.textContent = catalog[i].name;
     loadActivities();
     const cat = catalog[i];
-    if (!cat.items.length) {
-      showTicket(cat.name, null, "Nothing in this category yet — add a few, or spin again.");
-    } else {
-      showTicket(cat.name, null, "Now spin for the activity.");
-    }
+    showTicket(cat.name, null, cat.items.length
+      ? "Now spin for the activity."
+      : "Nothing in this category yet — add a few, or spin again.");
     sound.tick(0.5);
+    if (cat.items.length) scrollToCard(els.stationB, true);
   }
 
   function onActivity(i) {
     if (i < 0 || chosenCat < 0) return;
     const cat = catalog[chosenCat];
-    els.labelB.textContent = cat.items[i];
-    showTicket(cat.name, cat.items[i], null);
+    const item = cat.items[i];
+    if (!item) return;
+    els.labelB.textContent = item.n;
+    showTicket(cat.name, item, null);
     sound.chime();
+    scrollToCard(els.ticket, true);
   }
 
-  function showTicket(cat, act, note) {
+  function showTicket(catName, item, note) {
     const t = els.ticket;
     t.innerHTML = "";
     const box = document.createElement("div");
@@ -1037,36 +1267,51 @@
 
     const c = document.createElement("span");
     c.className = "cat";
-    c.textContent = cat;
+    c.textContent = catName;
     box.appendChild(c);
 
-    if (act) {
+    if (item) {
       const a = document.createElement("p");
       a.className = "act";
-      a.textContent = act;
+      a.textContent = item.n;
       box.appendChild(a);
-      els.live.textContent = "Tonight: " + cat + ", " + act;
+
+      if (item.how) {
+        const h = document.createElement("p");
+        h.className = "how";
+        h.textContent = item.how;
+        box.appendChild(h);
+      }
+
+      const again = document.createElement("button");
+      again.className = "ghost again";
+      again.textContent = "Start over";
+      again.addEventListener("click", () => refreshWheels(false, true));
+      box.appendChild(again);
+
+      els.live.textContent = "Tonight: " + catName + ", " + item.n
+        + (item.how ? ". " + item.how : "");
     } else if (note) {
       const n = document.createElement("span");
       n.className = "note";
       n.textContent = note;
       box.appendChild(n);
-      els.live.textContent = cat + ". " + note;
+      els.live.textContent = catName + ". " + note;
     }
     t.appendChild(box);
   }
 
   els.spinA.addEventListener("click", () => { resetRound(); wheelA.spin(); });
   els.spinB.addEventListener("click", () => wheelB.spin());
-  els.again.addEventListener("click", () => { resetRound(); refreshWheels(false); });
 
   /* ---- sound toggle ---- */
   const ICON_ON = '<path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2-3.7v7.4a4.5 4.5 0 0 0 2-3.7zm-2-8v2a6 6 0 0 1 0 12v2a8 8 0 0 0 0-16z"/>';
   const ICON_OFF = '<path d="M4 9v6h4l5 4V5L8 9H4zm15.1 3 2.5-2.5-1.4-1.4-2.5 2.5-2.5-2.5-1.4 1.4 2.5 2.5-2.5 2.5 1.4 1.4 2.5-2.5 2.5 2.5 1.4-1.4-2.5-2.5z"/>';
   function paintSound() {
     els.soundIcon.innerHTML = sound.on ? ICON_ON : ICON_OFF;
-    els.soundText.textContent = sound.on ? "Sound on" : "Sound off";
     els.soundBtn.setAttribute("aria-pressed", String(sound.on));
+    els.soundBtn.setAttribute("aria-label", sound.on ? "Sound on. Mute" : "Muted. Turn sound on");
+    els.soundBtn.title = sound.on ? "Mute" : "Turn sound on";
   }
   els.soundBtn.addEventListener("click", () => {
     sound.on = !sound.on;
@@ -1113,7 +1358,7 @@
       name.setAttribute("aria-label", "Category name");
       name.addEventListener("input", () => {
         cat.name = name.value;
-        commit(true);
+        commit();
       });
       const count = document.createElement("span");
       count.className = "count";
@@ -1126,7 +1371,7 @@
       del.setAttribute("aria-label", "Remove category " + cat.name);
       del.addEventListener("click", () => {
         catalog.splice(ci, 1);
-        commit(false);
+        commit();
         renderEditor();
       });
       top.append(name, count, del);
@@ -1135,26 +1380,41 @@
       ul.className = "items";
       cat.items.forEach((item, ii) => {
         const li = document.createElement("li");
+
+        const main = document.createElement("div");
+        main.className = "item-main";
         const inp = document.createElement("input");
         inp.type = "text";
-        inp.value = item;
-        inp.setAttribute("aria-label", "Activity");
+        inp.value = item.n;
+        inp.setAttribute("aria-label", "Activity name");
         inp.addEventListener("input", () => {
-          cat.items[ii] = inp.value;
-          commit(true);
+          item.n = inp.value;
+          commit();
         });
         const kill = document.createElement("button");
         kill.className = "kill";
         kill.type = "button";
         kill.innerHTML = "&times;";
         kill.title = "Remove activity";
-        kill.setAttribute("aria-label", "Remove " + item);
+        kill.setAttribute("aria-label", "Remove " + item.n);
         kill.addEventListener("click", () => {
           cat.items.splice(ii, 1);
-          commit(false);
+          commit();
           renderEditor();
         });
-        li.append(inp, kill);
+        main.append(inp, kill);
+
+        const how = document.createElement("textarea");
+        how.className = "how";
+        how.value = item.how || "";
+        how.placeholder = "What to do — shown on the result card";
+        how.setAttribute("aria-label", "Instructions for " + item.n);
+        how.addEventListener("input", () => {
+          item.how = how.value;
+          commit();
+        });
+
+        li.append(main, how);
         ul.appendChild(li);
       });
 
@@ -1170,9 +1430,9 @@
       const doAdd = () => {
         const v = newItem.value.trim();
         if (!v) return;
-        cat.items.push(v);
+        cat.items.push({ n: v, how: "" });
         newItem.value = "";
-        commit(false);
+        commit();
         renderEditor();
         const cards = els.cats.children[ci];
         if (cards) cards.querySelector(".add-row input").focus();
@@ -1194,7 +1454,7 @@
 
   els.addCat.addEventListener("click", () => {
     catalog.push({ name: "New category", items: [] });
-    commit(false);
+    commit();
     renderEditor();
     const last = els.cats.lastElementChild;
     if (last) { const i = last.querySelector(".cat-top input"); i.focus(); i.select(); }
@@ -1202,7 +1462,7 @@
 
   els.resetCat.addEventListener("click", () => {
     catalog = clone(STARTER);
-    commit(false);
+    commit();
     renderEditor();
     toast("Starter list restored");
   });
@@ -1214,7 +1474,7 @@
     try { parsed = sanitize(JSON.parse(els.json.value)); } catch (e) {}
     if (!parsed) { toast("That JSON isn't a valid list"); return; }
     catalog = parsed;
-    commit(false);
+    commit();
     renderEditor();
     toast("List loaded");
   });

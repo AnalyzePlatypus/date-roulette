@@ -44,11 +44,18 @@ switch `origin` back to SSH, or add this machine's SSH key to the AnalyzePlatypu
 
 ## Where the activity list lives
 
-- The starter list is baked into `index.html` (the `STARTER` array).
+- The starter list is baked into `index.html` (the `STARTER` array): 8 categories, 52
+  activities, each with a one-or-two-sentence instruction shown only on the result card.
 - Edits made in **Edit the list** are saved to that browser's `localStorage`, per device.
-- **Copy share link** encodes the whole catalog into the URL hash (`#c=…`). Open that link
-  on another device and it adopts the list and saves it there. That's the sync mechanism —
+- **Copy share link** encodes the catalog into the URL hash (`#c=…`). Open that link on
+  another device and it adopts the list and saves it there. That's the sync mechanism —
   text yourself the link.
+
+The share link omits any instruction still matching its built-in, and `sanitizeItem`
+backfills it by activity name on the way in. Without that, all 52 instructions ride along
+and the URL passes 10,000 characters — long enough for messaging apps to truncate, which
+would fail silently. Names-only is ~2,100 characters; only wording you actually changed
+adds to it. A bonus: an older names-only link picks up the current instructions for free.
 
 Because there's no server, a stranger who finds the page can only change their *own*
 copy. Nothing they do reaches your list. The tradeoff: the starter list baked into the
@@ -81,6 +88,23 @@ Not a CSS `rotate` with an eased timing function — the wheel is integrated on 
   and always settles centered under the flapper instead of straddling a line.
 - The **flapper** deflects by peg proximity and direction of travel, and each peg passing
   it fires a click.
+- The wheel is lettered radially with **no upright-flip**, deliberately. Flipping labels to
+  stay upright snaps them 180° as a wedge crosses the pointer, which reads as a glitch; the
+  cost is that lettering on one side is inverted, exactly like a physical prize wheel.
+
+### Deciding the winner early
+
+The result is committed the moment physics makes it inevitable, not when the wheel stops.
+The wheel sits in one detent well, and reaching a neighbouring wedge means climbing the peg
+barrier. With detent torque `D*sin(n*u)` the potential is `U(u) = (D/n)(1 - cos(n*u))`, so
+the barrier is `2D/n`. Friction only ever removes energy, so once total energy (kinetic
+plus potential) drops below that barrier the wheel can never leave the well — and every
+angle within a well maps to the same wedge index. `Wheel.decided()` tests exactly that.
+
+Measured over eight spins across the full `omega0` range, the winner always matched the
+wedge the wheel came to rest on, and the result landed 2.7s earlier on average (up to
+3.6s). The bigger win is variance: it used to appear anywhere between 3.9s and 8.0s
+depending on where the wheel got trapped, and now it's consistently 3.7–4.4s.
 
 Drag a wheel to flick it — release velocity is measured from the drag and fed straight in.
 `prefers-reduced-motion` shortens the spin by raising friction.
