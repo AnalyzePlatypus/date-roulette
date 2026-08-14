@@ -1,20 +1,43 @@
 # Date Night Roulette
 
+**Live: https://analyzeplatypus.github.io/date-roulette/**
+
 One file — [`index.html`](index.html) — no build step, no dependencies, no server.
 Spin the left wheel for a category, then the right wheel for an activity within it.
 
+On an iPhone, open the live URL in Safari and **Share → Add to Home Screen** for an
+app icon that launches it like a native app.
+
 ## Deploying
 
-Pick whichever is least annoying:
+GitHub Pages serves `index.html` straight off `main` — no Actions workflow, no build.
+Push and it's live within about a minute:
+
+```bash
+git push
+```
+
+### One gotcha when pushing
+
+This repo lives under the **AnalyzePlatypus** GitHub account, but the SSH key on this
+machine authenticates as **Michoels**. So `origin` is an HTTPS remote that authenticates
+through the `gh` credential helper, which uses whichever `gh` account is *active*. If a
+push 403s, switch accounts first:
+
+```bash
+gh auth switch --user AnalyzePlatypus
+```
+
+To avoid the dance permanently, either add Michoels as a collaborator on the repo and
+switch `origin` back to SSH, or add this machine's SSH key to the AnalyzePlatypus account.
+
+### Other options
 
 | Option | How | Notes |
 | --- | --- | --- |
-| Claude Artifact | Already published from this file | Private by default; updates by republishing the same file |
-| GitHub Pages | Push this repo, enable Pages on `main` | Free, permanent URL, works offline once loaded |
-| Netlify Drop | Drag the folder onto app.netlify.com/drop | No account needed |
+| Claude Artifact | Republish `index.html` from a conversation | Private by default; handy as a preview while iterating |
+| Netlify / Cloudflare Pages | Connect the repo | Deploys from a *private* repo for free if you ever want the list unlisted |
 | No hosting at all | Open `index.html` from disk, or AirDrop it to a phone | Works over `file://` |
-
-On an iPhone, open the URL in Safari and **Share → Add to Home Screen** for an app icon.
 
 ## Where the activity list lives
 
